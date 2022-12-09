@@ -105,8 +105,6 @@ def main():
 
     print(num_of_pairs_with_contained_assignments(dict))
     print(num_of_pairs_with_overlap_assignments(dict))
-            
-
 
 if __name__ == '__main__':
     main()
