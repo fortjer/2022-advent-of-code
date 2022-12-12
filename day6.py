@@ -36,7 +36,7 @@ def find_start_of_packet(input_string, sequence_length):
 
     print(curr_sequence_to_check)
 
-    return current_index
+    return (current_index + sequence_length)
 
 def main():
     input = []
@@ -50,6 +50,9 @@ def main():
 
     starting_character_index = find_start_of_packet(input[0], 4)
     print(starting_character_index)
+
+    starting_message_index = find_start_of_packet(input[0], 14)
+    print(starting_message_index)
 
 if __name__ == '__main__':
     main()
