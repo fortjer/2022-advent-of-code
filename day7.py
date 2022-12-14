@@ -21,36 +21,24 @@ def retrieve_size(dir_sizes, subdirs, curr_dir):
         subdirs_in_curr_dir = subdirs[curr_dir]
 
         for curr_subdir in subdirs_in_curr_dir:
-            print("Curr dir: " + str(curr_dir))
-            print("Curr subdir: " + str(curr_subdir))
-            print("Subdirs: " + str(subdirs_in_curr_dir) + '\n')
 
             path_curr_subdir = curr_dir + curr_subdir + '/'    
 
             dir_sizes[curr_dir] = dir_sizes[curr_dir] + retrieve_size(dir_sizes, subdirs, path_curr_subdir)
 
-    print("RETURN Curr_dir size: " + str(curr_dir) + ", " + str(dir_sizes[curr_dir]))
     return dir_sizes[curr_dir]
 
 def readjust_size_for_subdirs(dir_sizes, subdirs, curr_dir):
     path_curr_subdir = None
 
-    print(dir_sizes)
-    print(subdirs)
-
     if curr_dir in subdirs:
         subdirs_in_curr_dir = subdirs[curr_dir]
 
         for curr_subdir in subdirs_in_curr_dir:
-            print("Curr dir: " + str(curr_dir))
-            print("Curr subdir: " + str(curr_subdir))
-            print("Subdirs: " + str(subdirs_in_curr_dir) + '\n')
 
             path_curr_subdir = curr_dir + curr_subdir + '/'
 
             dir_sizes[curr_dir] = dir_sizes[curr_dir] + retrieve_size(dir_sizes, subdirs, path_curr_subdir)
-
-            print("SUM Curr_dir size: " + str(curr_dir) + ", " + str(dir_sizes[curr_dir]))
 
     return dir_sizes
 
@@ -167,8 +155,6 @@ def parse_input(input_dict):
                 curr_item = [dir_path, 'fil', line[1], line[0]]
                 dir_structure.append(curr_item)
 
-    print(dir_structure)
-
     return dir_structure
 
 def filter_dir_sizes(dir_sizes, max_size_limit):
@@ -211,6 +197,44 @@ def perform_tests(file_contents):
 
         all_dirs.append(line[2])
 
+def determine_directory_to_delete(total_avail_disk_space, needed_disk_space, dir_sizes):
+    root_dir_size = None
+    directory_to_delete = None
+    size_of_directory_to_delete = None
+    tolerance = None
+
+    if dir_sizes[ROOT_DIR]:
+        root_dir_size = dir_sizes[ROOT_DIR]
+
+    free_disk_space = total_avail_disk_space - root_dir_size
+
+    target_disk_spaced_needed = needed_disk_space - free_disk_space
+
+    # Set default tolerance
+    tolerance = 0 - total_avail_disk_space
+
+    if dir_sizes:
+        for dir in dir_sizes:
+
+            size_still_needed = target_disk_spaced_needed - dir_sizes[dir]
+
+            # If the directory is too small, continue looking
+            if (size_still_needed > 0):
+                continue 
+
+            # If the directory is large enough
+            # BUT smaller than the previously selected directory to delete,
+            # We are choosing the currently selected directory for deletion
+            if (size_still_needed > tolerance):
+                directory_to_delete = dir
+                size_of_directory_to_delete = dir_sizes[dir]
+                tolerance = size_still_needed
+
+    print("Directory to delete: " + str(directory_to_delete))
+
+    return size_of_directory_to_delete
+        
+
 def main():
     file_contents = []
     dir_sizes = None
@@ -232,10 +256,14 @@ def main():
     dir_sizes = find_dir_sizes(file_contents)
 
     # filter based on directories with a max size limit
-    dir_sizes = filter_dir_sizes(dir_sizes, 100000)
+    filtered_dir_sizes = filter_dir_sizes(dir_sizes, 100000)
 
     # return total sum of all filtered dir sizes
-    print(sum_dir_sizes(dir_sizes))
+    print("Sum of directory sizes with total size of at most 100k: " + str(sum_dir_sizes(filtered_dir_sizes)))
+
+    # choose which directory to delete based on 
+    # total disk space, allocated space, and needed space
+    print("Smallest directory we can delete to allocate space takes up: " + str(determine_directory_to_delete(70000000, 30000000, dir_sizes)))
 
 if __name__ == '__main__':
     main()
