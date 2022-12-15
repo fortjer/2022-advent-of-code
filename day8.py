@@ -4,7 +4,7 @@
 import os
  
 # -- CONSTANTS --
-INPUT_FILE = 'day8-test1.txt'
+INPUT_FILE = 'day8-input.txt'
 INPUT_DIR = 'input/'
 
 INDEX_GRID_VALUE = 0
@@ -65,7 +65,7 @@ def get_total_cols(file_contents):
 
     return char_number
 
-def calculate_visibility(value_grid, coords, visibility):
+def calculate_visibility(value_grid, coords, visibility, total_rows, total_cols):
     # Calculate Northern visibility, if not evaluated
     if visibility[INDEX_GRID_TOWARDS_NORTH_VISIBILITY] == RESULT_NOT_EVAL:
         is_tree_visible = True
@@ -80,6 +80,51 @@ def calculate_visibility(value_grid, coords, visibility):
             visibility[INDEX_GRID_TOWARDS_NORTH_VISIBILITY] = RESULT_VISIBLE
         else:
             visibility[INDEX_GRID_TOWARDS_NORTH_VISIBILITY] = RESULT_NOT_VISIBLE
+
+    # Calculate Southern visibility, if not evaluated
+    if visibility[INDEX_GRID_TOWARDS_SOUTH_VISIBILITY] == RESULT_NOT_EVAL:
+        is_tree_visible = True 
+        curr_value = int(value_grid[coords])
+
+        for x_coord in range(coords[INDEX_COORD_ROW] + 1, total_rows + 1):
+            comparison_coords = (x_coord, int(coords[INDEX_COORD_COL]))
+            if curr_value <= int(value_grid[comparison_coords]):
+                is_tree_visible = False
+
+        if is_tree_visible:
+            visibility[INDEX_GRID_TOWARDS_SOUTH_VISIBILITY] = RESULT_VISIBLE
+        else:
+            visibility[INDEX_GRID_TOWARDS_SOUTH_VISIBILITY] = RESULT_NOT_VISIBLE
+
+    # Calculate Western visibility, if not evaluated
+    if visibility[INDEX_GRID_TOWARDS_WEST_VISIBILITY] == RESULT_NOT_EVAL:
+        is_tree_visible = True 
+        curr_value = int(value_grid[coords])
+
+        for y_coord in reversed(range(1, coords[INDEX_COORD_COL])):
+            comparison_coords = (int(coords[INDEX_COORD_ROW]), y_coord)
+            if curr_value <= int(value_grid[comparison_coords]):
+                is_tree_visible = False 
+
+        if is_tree_visible:
+            visibility[INDEX_GRID_TOWARDS_WEST_VISIBILITY] = RESULT_VISIBLE
+        else:
+            visibility[INDEX_GRID_TOWARDS_WEST_VISIBILITY] = RESULT_NOT_VISIBLE
+
+    # Calculate Eastern visibility, if not evaluted
+    if visibility[INDEX_GRID_TOWARDS_EAST_VISIBILITY] == RESULT_NOT_EVAL:
+        is_tree_visible = True
+        curr_value = int(value_grid[coords])
+
+        for y_coord in range(coords[INDEX_COORD_COL] + 1, total_cols + 1):
+            comparison_coords = (int(coords[INDEX_COORD_ROW]), y_coord)
+            if curr_value <= int(value_grid[comparison_coords]):
+                is_tree_visible = False 
+
+        if is_tree_visible:
+            visibility[INDEX_GRID_TOWARDS_EAST_VISIBILITY] = RESULT_VISIBLE
+        else:
+            visibility[INDEX_GRID_TOWARDS_EAST_VISIBILITY] = RESULT_NOT_VISIBLE
 
     return visibility
 
@@ -111,11 +156,20 @@ def determine_visibility(value_grid, visibility_grid, total_rows, total_cols):
             visibility_grid[entry] = visibility
 
         # Calculate remaining visibility:
-        visibility_grid[entry] = calculate_visibility(value_grid, entry, visibility_grid[entry])
+        visibility_grid[entry] = calculate_visibility(value_grid, entry, visibility_grid[entry], total_rows, total_cols)
 
     return visibility_grid
 
+def calculate_num_of_trees_visible(visibility_grid):
+    num_of_trees_visible = 0
 
+    for entry in visibility_grid:
+        visibility = visibility_grid[entry]
+
+        if RESULT_VISIBLE in visibility:
+            num_of_trees_visible = num_of_trees_visible + 1
+
+    return num_of_trees_visible
 
 def main():
     file_contents = []
@@ -141,7 +195,8 @@ def main():
     # Score and determine visibility of trees from the outer perimeter
     visiblity_grid = determine_visibility(value_grid, visiblity_grid, total_rows, total_cols)
 
-    print(visiblity_grid)
+    # Calculate how many trees are visible from the outer perimeter
+    print(calculate_num_of_trees_visible(visiblity_grid))
 
 if __name__ == '__main__':
     main()
