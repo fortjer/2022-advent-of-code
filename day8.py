@@ -34,7 +34,7 @@ def generate_2D_value_grid(file_contents):
 
     return grid
 
-def generate_2D_tree_visbility_grid(file_contents):
+def generate_2D_tree_eval_grid(file_contents):
     grid = {}
 
     # Each line in the file is a row
@@ -171,6 +171,130 @@ def calculate_num_of_trees_visible(visibility_grid):
 
     return num_of_trees_visible
 
+def calculate_scenic_score(value_grid, coords, scenic_score, total_rows, total_cols):
+
+    # Calculate scenic score towards North if not evaluated
+    if scenic_score[INDEX_GRID_TOWARDS_NORTH_VISIBILITY] == RESULT_NOT_EVAL:
+        tentative_treehouse_height = int(value_grid[coords])
+        curr_scenic_score = 0
+
+        for x_coord in reversed(range(1, int(coords[INDEX_COORD_ROW]))):
+            comparison_coords = (x_coord, int(coords[INDEX_COORD_COL]))
+
+            comparison_tree_height = int(value_grid[comparison_coords])
+
+            curr_scenic_score = curr_scenic_score + 1
+
+            if tentative_treehouse_height <= comparison_tree_height:
+                break
+
+        scenic_score[INDEX_GRID_TOWARDS_NORTH_VISIBILITY] = curr_scenic_score
+
+    # Calculate scenic score towards South if not evaluated
+    if scenic_score[INDEX_GRID_TOWARDS_SOUTH_VISIBILITY] == RESULT_NOT_EVAL:
+        tentative_treehouse_height = int(value_grid[coords])
+        curr_scenic_score = 0
+
+        for x_coord in range(int(coords[INDEX_COORD_ROW]) + 1, total_rows + 1):
+            comparison_coords = (x_coord, int(coords[INDEX_COORD_COL]))
+
+            comparison_tree_height = int(value_grid[comparison_coords])
+
+            curr_scenic_score = curr_scenic_score + 1
+
+            if tentative_treehouse_height <= comparison_tree_height:
+                break
+
+        scenic_score[INDEX_GRID_TOWARDS_SOUTH_VISIBILITY] = curr_scenic_score
+
+    # Calculate scenice score towards West if not evaluated
+    if scenic_score[INDEX_GRID_TOWARDS_WEST_VISIBILITY] == RESULT_NOT_EVAL:
+        tentative_treehouse_height = int(value_grid[coords])
+        curr_scenic_score = 0
+
+        for y_coord in reversed(range(1, int(coords[INDEX_COORD_COL]))):
+            comparison_coords = (int(coords[INDEX_COORD_ROW]), y_coord)
+
+            comparison_tree_height = int(value_grid[comparison_coords])
+
+            curr_scenic_score = curr_scenic_score + 1
+
+            if tentative_treehouse_height <= comparison_tree_height:
+                break
+
+        scenic_score[INDEX_GRID_TOWARDS_WEST_VISIBILITY] = curr_scenic_score
+
+    # Calculate scenic score towards East if not evaluated
+    if scenic_score[INDEX_GRID_TOWARDS_EAST_VISIBILITY] == RESULT_NOT_EVAL:
+        tentative_treehouse_height = int(value_grid[coords])
+        curr_scenic_score = 0
+
+        for y_coord in range(coords[INDEX_COORD_COL] + 1, total_cols + 1):
+            comparison_coords = (int(coords[INDEX_COORD_ROW]), y_coord)
+
+            comparison_tree_height = int(value_grid[comparison_coords])
+
+            curr_scenic_score = curr_scenic_score + 1
+
+            if tentative_treehouse_height <= comparison_tree_height:
+                break
+
+        scenic_score[INDEX_GRID_TOWARDS_EAST_VISIBILITY] = curr_scenic_score
+
+    return scenic_score
+
+def generate_2D_scenic_score_grid(value_grid, scenic_score_grid, total_rows, total_cols):
+    for entry in scenic_score_grid:
+
+        # Check if entry is on the Northern edge:
+        if entry[INDEX_COORD_ROW] == 1:
+            scenic_score = scenic_score_grid[entry]
+            scenic_score[INDEX_GRID_TOWARDS_WEST_VISIBILITY] = 0
+            scenic_score_grid[entry] = scenic_score
+
+        # Check if entry is on the Southern edge
+        if entry[INDEX_COORD_ROW] == total_rows:
+            scenic_score = scenic_score_grid[entry]
+            scenic_score[INDEX_GRID_TOWARDS_EAST_VISIBILITY] = 0
+            scenic_score_grid[entry] = scenic_score
+
+        # Check if entry is on the Western edge
+        if entry[INDEX_COORD_COL] == 1:
+            scenic_score = scenic_score_grid[entry]
+            scenic_score[INDEX_GRID_TOWARDS_NORTH_VISIBILITY] = 0
+            scenic_score_grid[entry] = scenic_score
+
+        # Check if entry is on the Eastern edge
+        if entry[INDEX_COORD_COL] == total_cols:
+            scenic_score = scenic_score_grid[entry]
+            scenic_score[INDEX_GRID_TOWARDS_SOUTH_VISIBILITY] = 0
+            scenic_score_grid[entry] = scenic_score
+
+        # Calculate remaining scenic score
+        scenic_score_grid[entry] = calculate_scenic_score(value_grid, entry, scenic_score_grid[entry], total_rows, total_cols)
+
+    return scenic_score_grid
+
+def retrieve_highest_scenic_score(grid):
+    highest_scenic_score = -1
+    highest_entry = None
+
+    for entry in grid:
+        scenic_score = grid[entry]
+        total_scenic_score = scenic_score[INDEX_GRID_TOWARDS_NORTH_VISIBILITY]
+        total_scenic_score = total_scenic_score * scenic_score[INDEX_GRID_TOWARDS_SOUTH_VISIBILITY]
+        total_scenic_score = total_scenic_score * scenic_score[INDEX_GRID_TOWARDS_WEST_VISIBILITY]
+        total_scenic_score = total_scenic_score * scenic_score[INDEX_GRID_TOWARDS_EAST_VISIBILITY]
+
+        if highest_scenic_score < total_scenic_score:
+            highest_scenic_score = total_scenic_score
+            highest_entry = entry
+
+    print(grid)
+    print(highest_entry)
+
+    return highest_scenic_score
+
 def main():
     file_contents = []
 
@@ -190,13 +314,24 @@ def main():
     value_grid = generate_2D_value_grid(file_contents)
 
     # Generate a 2D tree visibility grid based on the file contents
-    visiblity_grid = generate_2D_tree_visbility_grid(file_contents)
+    visiblity_grid = generate_2D_tree_eval_grid(file_contents)
 
     # Score and determine visibility of trees from the outer perimeter
     visiblity_grid = determine_visibility(value_grid, visiblity_grid, total_rows, total_cols)
 
     # Calculate how many trees are visible from the outer perimeter
     print(calculate_num_of_trees_visible(visiblity_grid))
+
+    # Generate initial scenic score grid
+    scenic_store_grid = generate_2D_tree_eval_grid(file_contents)
+
+    # Score and determine the "scenic score" for building a treehouse
+    scenic_store_grid = generate_2D_scenic_score_grid(value_grid, scenic_store_grid, total_rows, total_cols)
+
+    print(scenic_store_grid)
+
+    # Retrieve highest scenic score
+    print(retrieve_highest_scenic_score(scenic_store_grid))
 
 if __name__ == '__main__':
     main()
